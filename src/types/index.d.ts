@@ -14,7 +14,7 @@ interface IEntity {
 }
 
 interface ISystem {
-    process(updates: IWorld["entities"], deltaTime: number): void;
+    process(entities: IWorld["entities"], deltaTime: number): void;
     enable(): boolean;
     disable(): boolean;
 }

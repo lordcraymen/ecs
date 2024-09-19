@@ -1,7 +1,5 @@
 import { IECSEngine, IWorld, ISystem, IEntity } from '../types'
 
-const UpdatedEntities = new Set<IEntity>();
-
 class ECSEngine implements IECSEngine {
     private readonly world: IWorld;
     private readonly systems: Set<ISystem>;
@@ -18,8 +16,7 @@ class ECSEngine implements IECSEngine {
 
     private update(deltaTime: number) {
         if (!this.running) return;
-        this.systems.forEach(system => system.process(UpdatedEntities, deltaTime));
-        UpdatedEntities.clear();
+        this.systems.forEach(system => system.process(this.world.entities, deltaTime));
         this.lastTime += deltaTime;
         this.animationFrame = requestAnimationFrame((time) => this.update(time - this.lastTime));
     }
