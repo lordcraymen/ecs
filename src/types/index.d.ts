@@ -1,30 +1,33 @@
 interface IComponent {
     type: string;
+    parentID: string;
+    needsProcessing: () => boolean;
+    markAsProcessed: () => void;
+    setParentID: (id: string) => void;
 }
 
 interface IEntity {
-    public components: Set<IComponent>;
-    private readonly id: string;
+    components: { [key: string]: IComponent };
+    readonly id: string;
+    needsProcessing: () => boolean;
+    markAsProcessed: () => void;
 }
 
 interface ISystem {
-    public update(world: IWorld, deltaTime: number): void;
-    public enable(): boolean;
-    public disable(): boolean;
+    process(updates: IWorld["entities"], deltaTime: number): void;
+    enable(): boolean;
+    disable(): boolean;
 }
 
 interface IWorld {
     entities: Set<IEntity>;
     systems: Set<ISystem>;
+    addEntity(entity: IEntity): void;
 }
 
 interface IECSEngine {
-    private readonly world: IWorld;
-    private readonly running: boolean;
-    private lastTime: number;
-    protected update(deltaTime: number): void;
-    public start(): Promise<void>;
-    public stop(): Promise<void>;
+    start(): Promise<void>;
+    stop(): Promise<void>;
 }
 
 export { type IComponent, type IEntity, type ISystem, type IWorld, type IECSEngine };

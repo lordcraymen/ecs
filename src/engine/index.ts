@@ -1,17 +1,13 @@
-import { IComponent, ISystem, IECSEngine, IWorld } from '../types'
+import { IECSEngine, IWorld, ISystem, IEntity } from '../types'
 
-
-
-
-
-const EntityMap = new Map<string, Entity>();
-
+const UpdatedEntities = new Set<IEntity>();
 
 class ECSEngine implements IECSEngine {
     private readonly world: IWorld;
     private readonly systems: Set<ISystem>;
     private running: boolean;
     private lastTime: number;
+    private animationFrame: number = -1;
     
     constructor(world: IWorld, systems: Set<ISystem>) {
         this.world = world;
@@ -21,20 +17,24 @@ class ECSEngine implements IECSEngine {
     }
 
     private update(deltaTime: number) {
-        this.systems.forEach(system => system.update(this.world, deltaTime));
+        if (!this.running) return;
+        this.systems.forEach(system => system.process(UpdatedEntities, deltaTime));
+        UpdatedEntities.clear();
         this.lastTime += deltaTime;
+        this.animationFrame = requestAnimationFrame((time) => this.update(time - this.lastTime));
     }
 
     public start(): Promise<void> {
+        if (this.running) return Promise.resolve();
         this.running = true;
-        return new Promise((resolve) => { this.running && resolve(); });
-
+        return new Promise((resolve) => { this.update(this.lastTime); this.running && resolve(); });
     }
 
     public stop(): Promise<void> {
+        if (!this.running) return Promise.resolve();
         this.running = false;
-        return new Promise((resolve) => { !this.running && resolve(); });
+        return new Promise((resolve) => { cancelAnimationFrame(this.animationFrame); resolve(); });
     }
 }
 
-export { ECSEngine, Entity };
+export { ECSEngine };
