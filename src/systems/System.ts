@@ -1,6 +1,6 @@
 import { ISystem, IWorld } from "../types";
 
-class System implements ISystem {
+abstract class System implements ISystem {
     private enabled: boolean;
     constructor() {
         this.enabled = true;
@@ -16,9 +16,7 @@ class System implements ISystem {
         return this.enabled;
     }
 
-    public update(world: IWorld, deltaTime: number) {
-        throw new Error('Method not implemented.');
-    }
+    public process(_entities: IWorld["entities"], _deltaTime: number) {}
 }
 
 export { System };

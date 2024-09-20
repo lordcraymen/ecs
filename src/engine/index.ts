@@ -1,4 +1,5 @@
-import { IECSEngine, IWorld, ISystem, IEntity } from '../types'
+import { IECSEngine, IWorld, ISystem } from '../types'
+import { updatedComponents } from '../components/Component/Component';
 
 class ECSEngine implements IECSEngine {
     private readonly world: IWorld;
@@ -19,6 +20,7 @@ class ECSEngine implements IECSEngine {
         this.systems.forEach(system => system.process(this.world.entities, deltaTime));
         this.lastTime += deltaTime;
         this.animationFrame = requestAnimationFrame((time) => this.update(time - this.lastTime));
+        updatedComponents.clear();
     }
 
     public start(): Promise<void> {

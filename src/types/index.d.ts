@@ -1,16 +1,13 @@
 interface IComponent {
     type: string;
-    parentID: string;
-    needsProcessing: () => boolean;
-    markAsProcessed: () => void;
-    setParentID: (id: string) => void;
+    [key: string]: any;
 }
 
 interface IEntity {
-    components: { [key: string]: IComponent };
     readonly id: string;
-    needsProcessing: () => boolean;
-    markAsProcessed: () => void;
+    addComponent(component: IComponent): void;
+    removeComponent(component: IComponent): void;
+    getComponent(name: IComponent["type"]): IComponent | undefined;
 }
 
 interface ISystem {
@@ -21,7 +18,6 @@ interface ISystem {
 
 interface IWorld {
     entities: Set<IEntity>;
-    systems: Set<ISystem>;
     addEntity(entity: IEntity): void;
 }
 

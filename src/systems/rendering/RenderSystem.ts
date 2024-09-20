@@ -1,10 +1,11 @@
-import { IWorld, IEntity } from "../../types";
+import { IWorld } from "../../types";
 import { System } from "../System";
 import { BoundsComponent, PositionComponent } from "../../components";
+import { updatedComponents } from "../../components/Component/Component";
 
-const RenderedEntityMap = new Map<string, HTMLElement>();
 
 class DomRenderSystem extends System {
+    private RenderedEntityMap: Map<string, HTMLElement> = new Map();
     private readonly domRoot: HTMLElement;
     constructor(domRoot: HTMLElement) {
         super();
@@ -14,21 +15,29 @@ class DomRenderSystem extends System {
     process(entities:IWorld["entities"], _deltaTime: number) {
 
         entities.forEach(entity => {
-            const position = entity.components["Position"] as PositionComponent;
-            const bounds = entity.components["Bounds"] as BoundsComponent;
+
+            
+            const position = entity.getComponent("Position") as PositionComponent;
+            const bounds = entity.getComponent("Bounds") as BoundsComponent;
             if (!position || !bounds) { console.log(`Entity ${entity.id} can not be rendered, no Position and Bounds are undefined`); return };
-            if(!entities.has(entity)) return;
-            const element = RenderedEntityMap.get(entity.id) || RenderedEntityMap.set(entity.id, document.createElement("div")).get(entity.id)!;
             
-            element.style.position = "absolute";
-            element.style.width = `${bounds.width}px`;
-            element.style.height = `${bounds.height}px`;
-            element.style.left = `${position.x}px`;
-            element.style.top = `${position.y}px`;
-            element.style.backgroundColor = "black";
+            const element = this.RenderedEntityMap.get(entity.id) || this.RenderedEntityMap.set(entity.id, document.createElement("div")).get(entity.id)!;
             
-            this.domRoot.appendChild(element);
-            ;
+            if (!this.domRoot.contains(element)) {
+                this.domRoot.appendChild(element);
+            }
+
+            if (updatedComponents.has(position)) {
+                element.style.left = `${position.x}px`;
+                element.style.top = `${position.y}px`;
+            }
+
+            //if (updatedComponents.has(bounds)) {
+                element.style.width = `${bounds.width}px`;
+                element.style.height = `${bounds.height}px`;
+            //}
+
+            element.style.border = "1px solid black";
         });
     }
 }
