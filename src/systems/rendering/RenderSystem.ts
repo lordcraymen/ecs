@@ -27,7 +27,7 @@ class DomRenderSystem extends System {
             }
 
             if (position.hasUpdate()) {
-                element.style.transform = `translate(${position.x}px, ${position.y}px)`;
+                element.style.transform = `translate(calc(${position.x}px - 50%), calc(${position.y}px - 50%))`;
             }
 
             if (bounds.hasUpdate()) {

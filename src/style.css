@@ -26,4 +26,5 @@ body {
 
 #app * {
   position:absolute;
+  border-radius: 50%;
 }
