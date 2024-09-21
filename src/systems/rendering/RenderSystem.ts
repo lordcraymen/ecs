@@ -1,7 +1,6 @@
 import { IWorld } from "../../types";
 import { System } from "../System";
 import { BoundsComponent, PositionComponent } from "../../components";
-import { updatedComponents } from "../../components/Component/Component";
 
 
 class DomRenderSystem extends System {
@@ -27,15 +26,14 @@ class DomRenderSystem extends System {
                 this.domRoot.appendChild(element);
             }
 
-            if (updatedComponents.has(position)) {
-                element.style.left = `${position.x}px`;
-                element.style.top = `${position.y}px`;
+            if (position.hasUpdate()) {
+                element.style.transform = `translate(${position.x}px, ${position.y}px)`;
             }
 
-            //if (updatedComponents.has(bounds)) {
+            if (bounds.hasUpdate()) {
                 element.style.width = `${bounds.width}px`;
                 element.style.height = `${bounds.height}px`;
-            //}
+            }
 
             element.style.border = "1px solid black";
         });

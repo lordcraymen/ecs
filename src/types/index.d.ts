@@ -1,5 +1,6 @@
 interface IComponent {
     type: string;
+    hasUpdate: () => boolean;
     [key: string]: any;
 }
 

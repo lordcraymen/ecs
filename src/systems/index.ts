@@ -1,2 +1,3 @@
 import { DomRenderSystem } from "./rendering/RenderSystem";
-export { DomRenderSystem };
+import { PhysicSystem } from "./physic/PhysicSystem";
+export { DomRenderSystem, PhysicSystem };

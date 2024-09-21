@@ -3,11 +3,13 @@ import { ECSEngine } from './engine';
 import { Entity } from './Entity';
 import { PositionComponent, BoundsComponent } from './components';
 import { World } from './World';
-import { DomRenderSystem } from './systems';
+import { PhysicSystem, DomRenderSystem } from './systems';
 
 const world = new World();
 
 const globalBounds = new BoundsComponent(100,100);
+
+
 
 const entity = new Entity(new Set([globalBounds,new PositionComponent(0,0)]));
 declare global {
@@ -22,12 +24,20 @@ window.bounds = globalBounds;
 
 world.addEntity(entity);
 
-//world.addEntity(new Entity(new Set([globalBounds,new PositionComponent(400,400)])));
+world.addEntity(new Entity(new Set([globalBounds,new PositionComponent(400,400)])));
 
 const root = document.querySelector<HTMLDivElement>('#app') || document.createElement('div');
 const renderer = new DomRenderSystem(root);
 
-const engine = new ECSEngine(world,new Set([renderer]));
+const documentBounds = new BoundsComponent(document.documentElement.clientWidth,document.documentElement.clientHeight);
+const physic = new PhysicSystem(documentBounds);
+
+window.addEventListener('resize',async () => {
+  documentBounds.width = document.documentElement.clientWidth;
+  documentBounds.height = document.documentElement.clientHeight;
+});
+
+const engine = new ECSEngine(world,new Set([physic,renderer]));
 
 engine.start().then(() => console.log('Engine started'));
 
