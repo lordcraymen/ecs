@@ -1,10 +1,11 @@
 import { IWorld } from "../../types";
 import { System } from "../System";
-import { BoundsComponent, PositionComponent } from "../../components";
+import { BoundsComponent, PositionComponent, SelectionComponent } from "../../components";
 
 
 class DomRenderSystem extends System {
     private RenderedEntityMap: Map<string, HTMLElement> = new Map();
+    private SelectableEntityMap: Map<string, EventListener> = new Map();
     private readonly domRoot: HTMLElement;
     constructor(domRoot: HTMLElement) {
         super();
@@ -36,6 +37,29 @@ class DomRenderSystem extends System {
             }
 
             element.style.border = "1px solid black";
+
+            const selectable = entity.getComponent("Selection") as SelectionComponent;
+
+            if (selectable) {
+                if (!this.SelectableEntityMap.has(entity.id)) {
+                    const onClick = (e) => {
+                        console.log(`Entity ${entity.id} was clicked`); 
+                        selectable.isSelected = !selectable.isSelected;
+                        e.stopPropagation();
+                        e.preventDefault();
+                        e.target.style.backgroundColor = selectable.isSelected ? "red" : "transparent";
+                    };
+                    element.addEventListener("click", onClick);
+                    this.SelectableEntityMap.set(entity.id, onClick);
+                } 
+            } else {
+                const onClick = this.SelectableEntityMap.get(entity.id);
+                if (onClick) {
+                    element.removeEventListener("click", onClick);
+                    this.SelectableEntityMap.delete(entity.id);
+                }
+            }
+
         });
     }
 }

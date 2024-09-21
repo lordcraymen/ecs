@@ -1,7 +1,7 @@
 import './style.css'
 import { ECSEngine } from './engine';
 import { Entity } from './Entity';
-import { PositionComponent, BoundsComponent } from './components';
+import { PositionComponent, BoundsComponent, SelectionComponent } from './components';
 import { World } from './World';
 import { PhysicSystem, DomRenderSystem } from './systems';
 
@@ -19,10 +19,6 @@ declare global {
 
 window.entity = entity;
 window.bounds = globalBounds;
-
-world.addEntity(entity);
-
-world.addEntity(new Entity(new Set([globalBounds,new PositionComponent(400,400)])));
 
 const root = document.querySelector<HTMLDivElement>('#app') || document.createElement('div');
 const renderer = new DomRenderSystem(root);
@@ -43,7 +39,7 @@ root.addEventListener('dblclick', (event) => {
 
   globalBounds.width = globalBounds.width;
 
-  const newEntity = new Entity(new Set([globalBounds, new PositionComponent(x, y)]));
+  const newEntity = new Entity(new Set([globalBounds, new PositionComponent(x, y), new SelectionComponent()]));
   world.addEntity(newEntity);
 });
 
