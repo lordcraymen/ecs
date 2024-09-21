@@ -9,8 +9,6 @@ const world = new World();
 
 const globalBounds = new BoundsComponent(100,100);
 
-
-
 const entity = new Entity(new Set([globalBounds,new PositionComponent(0,0)]));
 declare global {
   interface Window {
@@ -35,6 +33,18 @@ const physic = new PhysicSystem(documentBounds);
 window.addEventListener('resize',async () => {
   documentBounds.width = document.documentElement.clientWidth;
   documentBounds.height = document.documentElement.clientHeight;
+});
+
+// Event-Listener für Doppelklick hinzufügen
+root.addEventListener('dblclick', (event) => {
+  const rect = root.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  globalBounds.width = globalBounds.width;
+
+  const newEntity = new Entity(new Set([globalBounds, new PositionComponent(x, y)]));
+  world.addEntity(newEntity);
 });
 
 const engine = new ECSEngine(world,new Set([physic,renderer]));
