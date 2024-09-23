@@ -20,7 +20,7 @@ const NodeTypeFactory = <I, O>(options: NodeTypeFactoryOptions<I, O>) => {
     }
 
     // Proxy für die eingehenden Eigenschaften
-    private incomingProxy = new Proxy(this.incoming, {
+    private incomingProxy = new Proxy((this.incoming as Object), {
       set: (target, property, value) => {
         target[property as keyof I] = value;
         this.updateOutgoingProperties();

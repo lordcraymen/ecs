@@ -42,12 +42,13 @@ class DomRenderSystem extends System {
 
             if (selectable) {
                 if (!this.SelectableEntityMap.has(entity.id)) {
-                    const onClick = (e) => {
+                    const onClick = (e: Event) => {
                         console.log(`Entity ${entity.id} was clicked`); 
                         selectable.isSelected = !selectable.isSelected;
                         e.stopPropagation();
                         e.preventDefault();
-                        e.target.style.backgroundColor = selectable.isSelected ? "red" : "transparent";
+                        const target = e.target as HTMLElement;
+                        if(target) { target.style.backgroundColor = selectable.isSelected ? "red" : "transparent" };
                     };
                     element.addEventListener("click", onClick);
                     this.SelectableEntityMap.set(entity.id, onClick);
