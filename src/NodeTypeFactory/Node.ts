@@ -28,7 +28,7 @@ function rightsManagementHandler(userRights) {
 type NodeReference = UUIDNode["id"]
 
 // Abstract Node Class
-abstract class Node {
+abstract class BaseNode {
   public readonly type: Symbol
   private incoming: Map<string, Node | NodeReference>;
   private outgoing: Map<string, Node | NodeReference>;
@@ -162,8 +162,19 @@ eventBus.on("Transformation", (payload) => {
 });
 
 
-class UUIDNode extends Node {
+class UUIDNode extends BaseNode {
   constructor() {
     super(Symbol("UUID"));
   }
 }
+
+class UserNode extends BaseNode {
+  constructor() {
+    super(Symbol("User"));
+  }
+}
+
+const SuperUser = new UserNode();
+SuperUser.addIncomingProperty("role", "superuser");
+
+export {UUIDNode };
