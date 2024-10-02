@@ -4,6 +4,7 @@ import { Entity } from './Entity';
 import { PositionComponent, BoundsComponent, SelectionComponent } from './components';
 import { World } from './World';
 import { PhysicSystem, DomRenderSystem } from './systems';
+import { Canvas } from './Canvas';
 
 const world = new World();
 
@@ -46,5 +47,7 @@ root.addEventListener('dblclick', (event) => {
 const engine = new ECSEngine(world,new Set([physic,renderer]));
 
 engine.start().then(() => console.log('Engine started'));
+
+Canvas();
 
 
