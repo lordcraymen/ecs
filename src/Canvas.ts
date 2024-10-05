@@ -1,16 +1,135 @@
 import * as d3 from 'd3';
 
+class NodeComponent extends HTMLElement {
+  private _type: string = '';
+  private _svgContainer: SVGElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  private _shape: SVGCircleElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  private _clipPath: SVGClipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
+  private _clipId: string = `clip-${Math.random().toString(36).substr(2, 9)}`;
+
+  constructor() {
+    super();
+    const shadow = this.attachShadow({ mode: 'open' });
+
+    // Set up the circle's position relative to the SVG container
+    this._shape.setAttribute('cx', '50');
+    this._shape.setAttribute('cy', '50');
+    this._shape.setAttribute('r', '50');
+
+    // Set up the SVG container
+    this._svgContainer.setAttribute('width', '100px');
+    this._svgContainer.setAttribute('height', '100px');
+
+    // Create a clipPath element using the same circle
+    this._clipPath.setAttribute('id', this._clipId);
+    const clipCircle = this._shape.cloneNode() as SVGCircleElement; // clone the shape for clipping
+    this._clipPath.appendChild(clipCircle);
+    this._svgContainer.appendChild(this._clipPath);
+
+    // Apply the clip-path to the SVG container
+    this._svgContainer.style.clipPath = `url(#${this._clipId})`;
+
+    this._svgContainer.appendChild(this._shape);
+    shadow.appendChild(this._svgContainer);
+
+    // Add styles to make sure the component takes on the size of its content
+    const style = document.createElement('style');
+    style.textContent = `
+      :host {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+      }
+      svg {
+        width: 100%;
+        height: 100%;
+      }
+    `;
+    shadow.appendChild(style);
+  }
+
+  static get observedAttributes() {
+    return ['cx', 'cy', 'r', 'fill', 'stroke', 'stroke-width', 'type'];
+  }
+
+  get type() {
+    return this._type;
+  }
+
+  set type(value: string) {
+    this._type = value;
+    this.setAttribute('type', value);
+  }
+
+  attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
+    const circle = this.shadowRoot!.querySelector('circle')!;
+    if (name === 'type') {
+      this._type = newValue || '';
+    } else if (name === 'cx' || name === 'cy') {
+      this.updatePosition();
+    } else {
+      circle.setAttribute(name, newValue || '');
+    }
+  }
+
+  // Method to set the position of the component using CSS transforms
+  private updatePosition() {
+    const cx = this.getAttribute('cx');
+    const cy = this.getAttribute('cy');
+    if (cx !== null && cy !== null) {
+      this.style.transform = `translate(${cx}px, ${cy}px)`;
+    }
+  }
+}
+
+
+
+class FocusableNodeComponent extends NodeComponent {
+  constructor() {
+    super();
+    this.tabIndex = 0; // Make the element focusable
+  }
+
+  connectedCallback() {
+    this.addEventListener('focus', this.onFocus);
+    this.addEventListener('blur', this.onBlur);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener('focus', this.onFocus);
+    this.removeEventListener('blur', this.onBlur);
+  }
+
+  private onFocus = () => {
+    alert('focus');
+    const circle = this.shadowRoot!.querySelector('circle')!;
+    circle.setAttribute('stroke', 'blue'); // Change stroke color on focus
+  };
+
+  private onBlur = () => {
+    const circle = this.shadowRoot!.querySelector('circle')!;
+    circle.setAttribute('stroke', 'black'); // Revert stroke color on blur
+  };
+}
+
+customElements.define('graph-node', NodeComponent);
+
+
 const Canvas = () => {
   // Dateninitialisierung
   const width = 800;
   const height = 600;
   const app = document.getElementById('app')!;
-  const svgnode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svgnode.setAttribute('width', width.toString());
-  svgnode.setAttribute('height', height.toString());
-  svgnode.setAttribute('id', 'svg');
-  app.appendChild(svgnode);
-  const svg = d3.select(svgnode);
+  //const svgnode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  //svgnode.setAttribute('width', width.toString());
+  //svgnode.setAttribute('height', height.toString());
+  //svgnode.setAttribute('id', 'svg');
+  //app.appendChild(svgnode);
+  
+
+  //svgnode = 
+
+  const svg = d3.select(app);
 
   const nodeRadius = 50;
 
@@ -69,7 +188,7 @@ const Canvas = () => {
   const nodeElements = svg.selectAll<SVGCircleElement, Node>('.node')
     .data(allNodes, d => d.id)
     .enter()
-    .append<SVGCircleElement>('circle')
+    .append<SVGCircleElement>('graph-node')
     .attr('class', 'node')
     .attr('r', nodeRadius)
     .attr('fill', 'transparent')
