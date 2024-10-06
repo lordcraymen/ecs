@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 class NodeComponent extends HTMLElement {
   private _type: string = '';
   private _svgContainer: SVGElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  private _shape: SVGCircleElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  public _shape: SVGCircleElement = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
   private _clipPath: SVGClipPathElement = document.createElementNS('http://www.w3.org/2000/svg', 'clipPath');
   private _clipId: string = `clip-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -61,6 +61,25 @@ class NodeComponent extends HTMLElement {
     this.setAttribute('type', value);
   }
 
+  connectedCallback() {
+    this.addEventListener('focus', this.onFocus);
+    this.addEventListener('blur', this.onBlur);
+    this.tabIndex = 0;
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener('focus', this.onFocus);
+    this.removeEventListener('blur', this.onBlur);
+  }
+
+  private onFocus = () => {
+    this._shape.classList.add('focused'); // Add a class to change the stroke color
+  };
+
+  private onBlur = () => {
+    this._shape.classList.remove('focused'); // Remove the class to reset the stroke color
+  };
+
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
     const circle = this.shadowRoot!.querySelector('circle')!;
     if (name === 'type') {
@@ -80,36 +99,6 @@ class NodeComponent extends HTMLElement {
       this.style.transform = `translate(${cx}px, ${cy}px)`;
     }
   }
-}
-
-
-
-class FocusableNodeComponent extends NodeComponent {
-  constructor() {
-    super();
-    this.tabIndex = 0; // Make the element focusable
-  }
-
-  connectedCallback() {
-    this.addEventListener('focus', this.onFocus);
-    this.addEventListener('blur', this.onBlur);
-  }
-
-  disconnectedCallback() {
-    this.removeEventListener('focus', this.onFocus);
-    this.removeEventListener('blur', this.onBlur);
-  }
-
-  private onFocus = () => {
-    alert('focus');
-    const circle = this.shadowRoot!.querySelector('circle')!;
-    circle.setAttribute('stroke', 'blue'); // Change stroke color on focus
-  };
-
-  private onBlur = () => {
-    const circle = this.shadowRoot!.querySelector('circle')!;
-    circle.setAttribute('stroke', 'black'); // Revert stroke color on blur
-  };
 }
 
 customElements.define('graph-node', NodeComponent);

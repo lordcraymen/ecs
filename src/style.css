@@ -17,6 +17,10 @@ body {
   min-height: 100vh;
 }
 
+.focussed {
+  stroke: red;
+}
+
 #app {
   height:100vh;
   width: 100vw;
