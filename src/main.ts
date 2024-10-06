@@ -50,40 +50,4 @@ engine.start().then(() => console.log('Engine started'));
 
 Canvas();
 
-class HelloWorld extends HTMLElement {
-  constructor() {
-    super();
-    // Attach a shadow DOM to the element.
-    const shadow = this.attachShadow({ mode: 'open' });
-
-    // Create a div element.
-    const span = document.createElement('span');
-    span.textContent = 'Hello, World!';
-
-    // Add styles to make sure the component takes on the size of its content
-    const style = document.createElement('style');
-    style.textContent = `
-      :host {
-        display: contents;
-      }
-      span {
-        padding: 10px;
-        border: 1px solid black;
-      }
-    `;
-
-    // Append the styles and div to the shadow root.
-    shadow.appendChild(style);
-    shadow.appendChild(span);
-  }
-}
-
-// Define the custom element.
-customElements.define('hello-world', HelloWorld);
-
-const testNode = document.createElement('hello-world');
-document.body.appendChild(testNode);
-const graphNode = document.createElement('graph-node');
-document.body.appendChild(graphNode);
-
 

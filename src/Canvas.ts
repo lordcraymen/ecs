@@ -44,6 +44,9 @@ class NodeComponent extends HTMLElement {
         width: 100%;
         height: 100%;
       }
+      .focused {
+        stroke: blue;
+      }
     `;
     shadow.appendChild(style);
   }
@@ -62,22 +65,28 @@ class NodeComponent extends HTMLElement {
   }
 
   connectedCallback() {
-    this.addEventListener('focus', this.onFocus);
-    this.addEventListener('blur', this.onBlur);
+    this.addEventListener('focus', this.onFocus, true);
+    this.addEventListener('blur', this.onBlur, true);
     this.tabIndex = 0;
   }
 
   disconnectedCallback() {
-    this.removeEventListener('focus', this.onFocus);
-    this.removeEventListener('blur', this.onBlur);
+    this.removeEventListener('focus', this.onFocus, true);
+    this.removeEventListener('blur', this.onBlur, true);
   }
 
-  private onFocus = () => {
-    this._shape.classList.add('focused'); // Add a class to change the stroke color
+  private onFocus = (event: FocusEvent) => {
+    event.stopPropagation(); // Prevent focus event from bubbling endlessly
+    if (event.target === this) {
+      this._shape.classList.add('focused'); // Add a class to change the stroke color
+    }
   };
 
-  private onBlur = () => {
-    this._shape.classList.remove('focused'); // Remove the class to reset the stroke color
+  private onBlur = (event: FocusEvent) => {
+    event.stopPropagation(); // Prevent blur event from bubbling endlessly
+    if (event.target === this) {
+      this._shape.classList.remove('focused'); // Remove the class to reset the stroke color
+    }
   };
 
   attributeChangedCallback(name: string, oldValue: string | null, newValue: string | null) {
@@ -103,20 +112,11 @@ class NodeComponent extends HTMLElement {
 
 customElements.define('graph-node', NodeComponent);
 
-
 const Canvas = () => {
   // Dateninitialisierung
   const width = 800;
   const height = 600;
   const app = document.getElementById('app')!;
-  //const svgnode = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  //svgnode.setAttribute('width', width.toString());
-  //svgnode.setAttribute('height', height.toString());
-  //svgnode.setAttribute('id', 'svg');
-  //app.appendChild(svgnode);
-  
-
-  //svgnode = 
 
   const svg = d3.select(app);
 
@@ -174,7 +174,7 @@ const Canvas = () => {
     .force('parentAttraction', forceParentAttraction);
 
   // Draw nodes
-  const nodeElements = svg.selectAll<SVGCircleElement, Node>('.node')
+  let nodeElements = svg.selectAll<SVGCircleElement, Node>('.node')
     .data(allNodes, d => d.id)
     .enter()
     .append<SVGCircleElement>('graph-node')
@@ -234,7 +234,31 @@ const Canvas = () => {
 
   // Function to update nodes
   function updateNodes() {
-    nodeElements.data(allNodes, d => d.id)
+    nodeElements = svg.selectAll<SVGCircleElement, Node>('.node')
+      .data(allNodes, d => d.id);
+
+    // Remove any excess nodes
+    nodeElements.exit().remove();
+
+    // Append new nodes if needed
+    const enterSelection = nodeElements.enter()
+      .append<SVGCircleElement>('graph-node')
+      .attr('class', 'node')
+      .attr('r', nodeRadius)
+      .attr('fill', 'transparent')
+      .attr('stroke', 'black')
+      .attr('stroke-width', 1.5)
+      .call(d3.drag<SVGCircleElement, Node>()
+        .on('start', dragStarted)
+        .on('drag', dragged)
+        .on('end', dragEnded)
+      );
+
+    // Merge new nodes with existing nodes
+    nodeElements = enterSelection.merge(nodeElements);
+
+    // Update the attributes of all nodes
+    nodeElements
       .attr('r', d => nodeRadius + d.nodes.length * 2)
       .attr('cx', d => d.x)
       .attr('cy', d => d.y);
