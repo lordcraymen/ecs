@@ -111,17 +111,20 @@ class GraphElement extends HTMLElement {
     private updatePosition() {
         const cx = this.getAttribute('cx');
         const cy = this.getAttribute('cy');
+        
         if (cx !== null && cy !== null) {
-          if (this._styleSheet?.sheet) {
+          // Check if stylesheet exists and has a sheet property (replace optional chaining for IE compatibility)
+          if (this._styleSheet && this._styleSheet.sheet) {
+            // Access the first CSS rule
             const rule = this._styleSheet.sheet.cssRules[0];
-      
-            // Check if the rule is a CSSStyleRule
-            if (rule instanceof CSSStyleRule) {
-                rule.style.transform = `translate(${cx}px, ${cy}px)`;
+            // Use rule.type instead of instanceof for IE compatibility
+            if (rule instanceof CSSStyleRule && rule.type === CSSRule.STYLE_RULE) {
+              (rule as CSSStyleRule).style.transform = `translate(${cx}px, ${cy}px)`;
             }
           }
         }
       }
+      
       
 }
 
