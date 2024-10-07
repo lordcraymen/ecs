@@ -116,9 +116,8 @@ class GraphElement extends HTMLElement {
             const rule = this._styleSheet.sheet.cssRules[0];
       
             // Check if the rule is a CSSStyleRule
-            if (rule.type === CSSRule.STYLE_RULE) {
-              const styleRule = rule as CSSStyleRule;
-              styleRule.style.transform = `translate(${cx}px, ${cy}px)`;
+            if (rule instanceof CSSStyleRule) {
+                rule.style.transform = `translate(${cx}px, ${cy}px)`;
             }
           }
         }
