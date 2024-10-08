@@ -1,0 +1,24 @@
+:host {
+    display    : block;
+    width      : 0px;
+    height     : 0px;
+    overflow   : visible;
+    will-change: transform;
+}
+
+:host {
+    &:focus,
+    &:focus-visible {
+        outline: none;
+    }
+}
+
+svg {
+    width    : 100px;
+    height   : 100px;
+    transform: translate(-50%, -50%);
+}
+
+circle:focus {
+    stroke: blue;
+}
