@@ -101,8 +101,8 @@ const Canvas = () => {
 
     // Check if the node is inside another node
     const parentNode = nodesData.find(node => {
-      const distance = Math.sqrt((node.x - d.x) ** 2 + (node.y - d.y) ** 2);
-      return distance < nodeRadius * 2 && node.id !== d.id;
+      const distance = Math.sqrt((node.x - d.x) ** 50 + (node.y - d.y) ** 50);
+      return distance < nodeRadius * 50 && node.id !== d.id;
     });
 
     if (parentNode) {
