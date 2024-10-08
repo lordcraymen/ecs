@@ -1,5 +1,7 @@
 import GraphHostStyles from "./GraphElement.scss?inline";
 
+
+
 const setCSSStyleRule = (
   rule: CSSStyleRule,
   style: Partial<CSSStyleDeclaration>
@@ -17,8 +19,7 @@ type RootStyleSetter = {
 
 const useRootStyle = (target: ShadowRoot | HTMLElement): RootStyleSetter => {
   const style = document.createElement("style");
-  style.textContent = ":host { display: block; }";
-
+  style.textContent = ":host {}";
   target.appendChild(style);
   console.dir(style.sheet);
   const cssRule = style.sheet?.cssRules[0] as CSSStyleRule;
@@ -64,8 +65,6 @@ class GraphElement extends HTMLElement {
     const style = document.createElement("style");
     style.textContent = GraphHostStyles;
     shadow.appendChild(style);
-
-    this._rootStyle = useRootStyle(shadow);
   }
 
   static get observedAttributes() {
@@ -82,6 +81,7 @@ class GraphElement extends HTMLElement {
   }
 
   connectedCallback() {
+    this._rootStyle = useRootStyle(this.shadowRoot!);
     this.addEventListener("focus", this.onFocus, true);
     this.addEventListener("blur", this.onBlur, true);
     this.tabIndex = 0;
