@@ -47,16 +47,13 @@ class GraphElement extends HTMLElement {
     const shadow = this.attachShadow({ mode: "open" });
 
     // Set up the circle's position relative to the SVG container
+    this._shape.classList.add("shape");
     this._shape.setAttribute("cx", "50%");
     this._shape.setAttribute("cy", "50%");
     this._shape.setAttribute("r", "50%");
-    this._shape.setAttribute("fill", "transparent");
-    this._shape.setAttribute("stroke", "black");
-    this._shape.setAttribute("stroke-width", "1");
 
     // Set up the SVG container
-    this._svgContainer.setAttribute("width", "100px");
-    this._svgContainer.setAttribute("height", "100px");
+    this._svgContainer.classList.add("svgContainer");
 
     this._svgContainer.appendChild(this._shape);
     shadow.appendChild(this._svgContainer);
@@ -97,7 +94,7 @@ class GraphElement extends HTMLElement {
     event.stopPropagation(); // Prevent focus event from bubbling endlessly
     console.log(event.target);
     if (event.target === this) {
-      this._shape.focus(); // Add a class to change the stroke color
+      this._shape.classList.add("focus"); // Add a class to change the stroke color
     }
   };
 
@@ -106,7 +103,7 @@ class GraphElement extends HTMLElement {
     event.stopPropagation(); // Prevent blur event from bubbling endlessly
     console.log(event.target);
     if (event.target === this) {
-      this._shape.blur(); // Remove the class to reset the stroke color
+      this._shape.classList.remove("focus"); // Remove the class to reset the stroke color
     }
   };
 

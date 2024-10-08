@@ -13,12 +13,24 @@
     }
 }
 
-svg {
+:host(:focus-visible) {
+    outline: none;
+}
+
+.svgContainer {
     width    : 100px;
     height   : 100px;
     transform: translate(-50%, -50%);
 }
 
-circle:focus {
+.shape {
+    fill: transparent;
+    stroke: black;
+    transition: all 0.2s ease-in-out;
+}
+
+.shape.focus {
+    fill:cadetblue;
     stroke: blue;
+
 }
