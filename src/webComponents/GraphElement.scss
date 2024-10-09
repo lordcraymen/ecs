@@ -37,3 +37,8 @@
     stroke: blue;
 
 }
+
+.blur {
+    filter: blur(5px);
+    border-end-start-radius: 5px;
+}
