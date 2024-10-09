@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smooth Text Reflow Animation with Editable Content</title>
+<style>
+  #text {
+    display: inline-block;
+    font-family: sans-serif;
+    white-space: pre-wrap; /* Preserve white space and line breaks */
+  }
+
+  #text:focus-visible {
+    outline: none;
+  }
+
+  #text span {
+    display: inline-block;
+    position: relative;
+  }
+</style>
+</head>
+<body>
+
+<p id="text" contenteditable="true">
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean auctor accumsan pretium. Nullam dapibus magna congue auctor luctus. Nulla ac ullamcorper ex. Phasellus euismod, mi sed aliquet suscipit, nunc eros rutrum odio, quis pellentesque augue nisl vitae mauris. Nunc rhoncus lectus vitae diam blandit vehicula. Vivamus tempus finibus ipsum, nec ullamcorper neque scelerisque vitae. Nam mollis tempor justo, eget lobortis tellus commodo maximus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
+
+    Pellentesque iaculis ipsum felis, vitae malesuada dui gravida dapibus. In elementum sapien a felis tincidunt, a imperdiet lorem consequat. Maecenas ipsum enim, porta vitae eleifend non, porta et quam. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris mattis ex urna, sit amet dapibus nulla tristique sit amet. Maecenas augue est, hendrerit in varius vel, ultrices a sapien. Vestibulum placerat a nibh in dapibus. Donec tempor, metus et pulvinar scelerisque, orci risus ultrices dolor, vel lacinia mi est at mi. Donec varius arcu nec enim pellentesque maximus. Suspendisse potenti.
+</p>
+
+<script>
+  const textElement = document.getElementById('text');
+  let fontSize = 15;
+  let targetFontSize = 15;
+  let isAnimating = false;
+
+  // Function to save cursor position
+  function saveCursorPosition() {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      return selection.getRangeAt(0);
+    }
+    return null;
+  }
+
+  // Function to restore cursor position
+  function restoreCursorPosition(range) {
+    if (range) {
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
+
+  // Function to wrap words in spans (tokenize)
+  function wrapTextInSpans() {
+    const cursorRange = saveCursorPosition();
+
+    const text = textElement.innerHTML.trim();
+    const lines = text.split(/<br\s*\/?>/i); // Split by <br> tags to retain line breaks
+    textElement.innerHTML = ''; // Clear current content
+
+    lines.forEach((line, lineIndex) => {
+      if (lineIndex > 0) {
+        // Add a line break after each line, except for the first one
+        textElement.appendChild(document.createElement('br'));
+      }
+
+      const words = line.split(/\s+/); // Split by spaces within each line
+      words.forEach(word => {
+        const span = document.createElement('span');
+        span.textContent = word;
+        textElement.appendChild(span);
+
+        // Append a whitespace text node after each span
+        const space = document.createTextNode(' ');
+        textElement.appendChild(space);
+      });
+    });
+
+    restoreCursorPosition(cursorRange);
+  }
+
+  // Function to merge words back into a single text node
+  function mergeTextFromSpans() {
+    const cursorRange = saveCursorPosition();
+
+    const lines = [];
+    let currentLine = [];
+    textElement.childNodes.forEach(node => {
+      if (node.nodeName === 'SPAN') {
+        currentLine.push(node.textContent);
+      } else if (node.nodeName === 'BR') {
+        lines.push(currentLine.join(' '));
+        currentLine = [];
+      }
+    });
+    // Push the last line if there is any content left
+    if (currentLine.length > 0) {
+      lines.push(currentLine.join(' '));
+    }
+
+    textElement.innerHTML = lines.join('<br>'); // Recreate the original content with line breaks
+
+    restoreCursorPosition(cursorRange);
+  }
+
+  // Listen for keyboard shortcuts Ctrl+ and Ctrl-
+  document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey && (event.key === '+' || event.key === '=')) {
+      event.preventDefault();
+      adjustFontSize(5); // Increase size in steps of 5px
+    } else if (event.ctrlKey && event.key === '-') {
+      event.preventDefault();
+      adjustFontSize(-5); // Decrease size in steps of 5px
+    }
+  });
+
+  // Function to adjust font size
+  function adjustFontSize(change) {
+    targetFontSize += change;
+    if (targetFontSize < 10) targetFontSize = 10; // Minimum font size
+
+    // If an animation is in progress, just set the new target and return
+    if (isAnimating) {
+      return;
+    }
+
+    // Tokenize before resizing
+    wrapTextInSpans();
+
+    // Trigger the animation to the target size
+    performSmoothResize(targetFontSize);
+  }
+
+  function performSmoothResize(newFontSize) {
+    isAnimating = true;
+
+    const words = textElement.querySelectorAll('span');
+
+    // Step 1: Capture Initial Positions
+    const firstPositions = [];
+    words.forEach(word => {
+      const rect = word.getBoundingClientRect();
+      firstPositions.push(rect);
+    });
+
+    // Step 2: Apply new font size
+    textElement.style.fontSize = newFontSize + 'px';
+
+    // Step 3: Capture Final Positions after font size change
+    requestAnimationFrame(() => {
+      const lastPositions = [];
+      words.forEach(word => {
+        const rect = word.getBoundingClientRect();
+        lastPositions.push(rect);
+      });
+
+      // Step 4: Calculate Deltas and Apply Inverse Transforms
+      words.forEach((word, index) => {
+        const deltaX = firstPositions[index].left - lastPositions[index].left;
+        const deltaY = firstPositions[index].top - lastPositions[index].top;
+        word.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+      });
+
+      // Step 5: Animate Words to New Positions
+      requestAnimationFrame(() => {
+        words.forEach(word => {
+          word.style.transition = 'transform 0.5s ease';
+          word.style.transform = 'translate(0, 0)';
+        });
+      });
+
+      // Step 6: Clean Up Inline Styles After Animation
+      setTimeout(() => {
+        words.forEach(word => {
+          word.style.transition = '';
+          word.style.transform = '';
+        });
+        isAnimating = false; // Animation is complete
+
+        // If the target font size has changed during the animation, start a new animation
+        if (fontSize !== targetFontSize) {
+          performSmoothResize(targetFontSize);
+        } else {
+          // Merge spans back into plain text for easier editing
+          mergeTextFromSpans();
+        }
+
+        fontSize = targetFontSize; // Sync the fontSize with the latest target
+      }, 500); // Match this duration with your transition duration
+    });
+  }
+</script>
+
+</body>
+</html>
