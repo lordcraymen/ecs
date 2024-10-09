@@ -6,8 +6,8 @@
 <style>
   #text {
     display: inline-block;
-    font-family: sans-serif;
-    white-space: pre-wrap; /* Preserve white space and line breaks */
+    font-family: 'Great Vibes', cursive;
+    white-space: pre-wrap;
   }
 
   #text:focus-visible {
@@ -17,6 +17,13 @@
   #text span {
     display: inline-block;
     position: relative;
+    will-change: transform;
+  }
+
+  @keyframes variation1 {
+    50% {
+      transform: scale(80%), rotateZ('5deg');
+    }
   }
 </style>
 </head>
@@ -161,12 +168,15 @@
         const deltaX = firstPositions[index].left - lastPositions[index].left;
         const deltaY = firstPositions[index].top - lastPositions[index].top;
         word.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        
       });
 
       // Step 5: Animate Words to New Positions
       requestAnimationFrame(() => {
         words.forEach(word => {
-          word.style.transition = 'transform 0.5s ease';
+            const randomDuration = (Math.random() * 0.3 + 0.5).toFixed(2) + 's';
+            word.style.transition = `transform ${randomDuration} ease-in-out`;
+            word.style.animation = `variation1 ${randomDuration}`;
           word.style.transform = 'translate(0, 0)';
         });
       });
@@ -188,7 +198,7 @@
         }
 
         fontSize = targetFontSize; // Sync the fontSize with the latest target
-      }, 500); // Match this duration with your transition duration
+      }, 800); // Match this duration with your transition duration
     });
   }
 </script>
