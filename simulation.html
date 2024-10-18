@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nested Node Adding Example</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .nodes circle {
+      fill: white;
+      stroke: black;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Nested Node Adding Example</h1>
+  <button id="addNode">Add Node</button>
+  <script>
+    // Function to generate a unique ID (GUID)
+    function generateGUID() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0,
+          v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
+    // Data for nodes
+    const nodes = [];
+    const links = [];
+    const contextSimulations = {}; // Store simulations for each context
+    const lastPositions = {}; // Store last known positions for nodes
+
+    // D3.js Visualization Setup
+    const width = 800;
+    const height = 600;
+    const svg = d3.select('body').append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const padding = 5; // Padding between nodes
+
+    // Factory to create force simulations for nodes
+    function createSimulation(parentNode) {
+      const radialForce = d3.forceRadial(0, () => parentNode.x, () => parentNode.y).strength(0.5);
+      const simulation = d3.forceSimulation()
+        .force('collision', d3.forceCollide().radius(d => d.r + padding))
+        .force('attraction', radialForce)
+        .on('tick', function() {
+          // Check if parent position has changed, if so add energy to the simulation
+          if (lastPositions[parentNode.id] === undefined || lastPositions[parentNode.id].x !== parentNode.x || lastPositions[parentNode.id].y !== parentNode.y) {
+            simulation.alpha(0.3).restart();
+          }
+          lastPositions[parentNode.id] = { x: parentNode.x, y: parentNode.y };
+
+          // Update radial force center to follow the parent's current position
+          radialForce.radius(0).x(parentNode.x).y(parentNode.y);
+
+          svg.selectAll('circle')
+            .filter(d => d.parent === parentNode.id)
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y);
+        });
+
+      simulation._nodes = []; // Store nodes internally
+
+      simulation.add = function(node) {
+        simulation._nodes.push(node);
+        simulation.nodes(simulation._nodes).alpha(1).restart();
+        updateParentNode(parentNode); // Update parent node position and radius
+      };
+
+      simulation.remove = function(node) {
+        simulation._nodes = simulation._nodes.filter(n => n.id !== node.id);
+        simulation.nodes(simulation._nodes);
+        if (simulation._nodes.length === 0) {
+          simulation.stop();
+        }
+        updateParentNode(parentNode); // Update parent node position and radius
+      };
+
+      return simulation;
+    }
+
+    // Add Node Button Click Event
+    d3.select('#addNode').on('click', () => {
+      const newNode = { id: generateGUID(), x: width / 2, y: height / 2, r: 20, children: [] };
+      nodes.push(newNode);
+      if (!contextSimulations['root']) {
+        contextSimulations['root'] = createSimulation({ x: width / 2, y: height / 2 });
+      }
+      contextSimulations['root'].add(newNode);
+      update();
+    });
+
+    // Double Click to Add Node in Context
+    svg.on('dblclick', function(event) {
+      const [x, y] = d3.pointer(event);
+      const clickedNode = nodes.find(node => Math.sqrt((node.x - x) ** 2 + (node.y - y) ** 2) < node.r);
+
+      if (clickedNode) {
+        if (!contextSimulations[clickedNode.id]) {
+          contextSimulations[clickedNode.id] = createSimulation(clickedNode);
+        }
+
+        const newChildNode = { id: generateGUID(), x: clickedNode.x, y: clickedNode.y, r: 15, parent: clickedNode.id, children: [] };
+        clickedNode.children.push(newChildNode);
+        nodes.push(newChildNode);
+        contextSimulations[clickedNode.id].add(newChildNode);
+        updateContext(clickedNode);
+        update();
+      }
+    });
+
+    // Update Visualization
+    function update() {
+      // Bind nodes data to elements
+      const node = svg.selectAll('circle').data(nodes, d => d.id);
+
+      // Enter new nodes
+      const nodeEnter = node.enter().append('circle')
+        .attr('r', d => d.r)
+        .attr('fill', 'white')
+        .attr('stroke', 'black')
+        .attr('stroke-width', 2)
+        .call(d3.drag()
+          .on('start', dragstarted)
+          .on('drag', dragged)
+          .on('end', dragended));
+
+      // Merge new nodes with existing nodes
+      nodeEnter.merge(node);
+
+      // Remove old nodes
+      node.exit().remove();
+    }
+
+    // Update Context (Resize Parent Node to Encompass Children)
+    function updateContext(parentNode) {
+      updateParentNode(parentNode);
+    }
+
+    // Update Parent Node Position and Radius
+    function updateParentNode(parentNode) {
+      const children = nodes.filter(node => node.parent === parentNode.id);
+      if (children.length > 0) {
+        const xValues = children.map(child => child.x);
+        const yValues = children.map(child => child.y);
+        const avgX = xValues.reduce((a, b) => a + b, 0) / xValues.length;
+        const avgY = yValues.reduce((a, b) => a + b, 0) / yValues.length;
+
+        // Calculate the bounding box considering the radius of each child node
+        const minX = Math.min(...children.map(child => child.x - child.r));
+        const maxX = Math.max(...children.map(child => child.x + child.r));
+        const minY = Math.min(...children.map(child => child.y - child.r));
+        const maxY = Math.max(...children.map(child => child.y + child.r));
+
+        parentNode.x = avgX;
+        parentNode.y = avgY;
+        parentNode.r = Math.max((maxX - minX) / 2, (maxY - minY) / 2) + padding * 2;
+
+        svg.selectAll('circle')
+          .filter(d => d.id === parentNode.id)
+          .attr('cx', parentNode.x)
+          .attr('cy', parentNode.y)
+          .attr('r', parentNode.r);
+      }
+    }
+
+    // Dragging functions
+    function dragstarted(event, d) {
+      if (!event.active) {
+        if (d.parent && contextSimulations[d.parent]) {
+          contextSimulations[d.parent].alphaTarget(0.3).restart();
+        } else if (contextSimulations['root']) {
+          contextSimulations['root'].alphaTarget(0.3).restart();
+        }
+      }
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) {
+        if (d.parent && contextSimulations[d.parent]) {
+          contextSimulations[d.parent].alphaTarget(0);
+        } else if (contextSimulations['root']) {
+          contextSimulations['root'].alphaTarget(0);
+        }
+      }
+      d.fx = null;
+      d.fy = null;
+    }
+  </script>
+</body>
+</html>

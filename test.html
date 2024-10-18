@@ -2,19 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Smooth Text Reflow Animation with Editable Content</title>
+<title>Smooth Text Reflow Animation with Wrapper</title>
 <style>
-  #text {
+  my-paragraph {
     display: inline-block;
     font-family: Arial, Helvetica, sans-serif;
     white-space: pre-wrap;
+    font-size: 15px;
+    overflow: visible; /* Allow temporary overflow */
   }
 
-  #text:focus-visible {
-    outline: none;
+  /* Styling for internal wrapper */
+  div.wrapper {
+    display: inline-block;
+    position: relative;
+    overflow: visible; /* Overflow management inside the wrapper */
+    will-change: transform;
   }
 
-  #text span {
+  div.wrapper span {
     display: inline-block;
     position: relative;
     will-change: transform;
@@ -22,186 +28,172 @@
 
   @keyframes variation1 {
     50% {
-      transform: scale(80%), rotateZ('5deg');
+      transform: scale(80%), rotateZ(5deg);
     }
   }
 </style>
-</head>
-<body>
-
-<p id="text" contenteditable="true">
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean auctor accumsan pretium. Nullam dapibus magna congue auctor luctus. Nulla ac ullamcorper ex. Phasellus euismod, mi sed aliquet suscipit, nunc eros rutrum odio, quis pellentesque augue nisl vitae mauris. Nunc rhoncus lectus vitae diam blandit vehicula. Vivamus tempus finibus ipsum, nec ullamcorper neque scelerisque vitae. Nam mollis tempor justo, eget lobortis tellus commodo maximus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
-
-    Pellentesque iaculis ipsum felis, vitae malesuada dui gravida dapibus. In elementum sapien a felis tincidunt, a imperdiet lorem consequat. Maecenas ipsum enim, porta vitae eleifend non, porta et quam. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris mattis ex urna, sit amet dapibus nulla tristique sit amet. Maecenas augue est, hendrerit in varius vel, ultrices a sapien. Vestibulum placerat a nibh in dapibus. Donec tempor, metus et pulvinar scelerisque, orci risus ultrices dolor, vel lacinia mi est at mi. Donec varius arcu nec enim pellentesque maximus. Suspendisse potenti.
-</p>
-
 <script>
-  const textElement = document.getElementById('text');
-  let fontSize = 15;
-  let targetFontSize = 15;
-  let isAnimating = false;
+  class MyParagraph extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }); // Shadow DOM to isolate content
+      this.resizeObserver = null;
+      this.fontSize = 15;
+      this.isAnimating = false;
+      this.targetFontSize = this.fontSize;
 
-  // Function to save cursor position
-  function saveCursorPosition() {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-      return selection.getRangeAt(0);
+      // Create the wrapper in the shadow DOM
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('wrapper');
+      wrapper.innerHTML = this.innerHTML; // Use existing content
+      this.shadowRoot.appendChild(wrapper); // Add to shadow DOM
     }
-    return null;
-  }
 
-  // Function to restore cursor position
-  function restoreCursorPosition(range) {
-    if (range) {
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-    }
-  }
-
-  // Function to wrap words in spans (tokenize)
-  function wrapTextInSpans() {
-    const cursorRange = saveCursorPosition();
-
-    const text = textElement.innerHTML.trim();
-    const lines = text.split(/<br\s*\/?>/i); // Split by <br> tags to retain line breaks
-    textElement.innerHTML = ''; // Clear current content
-
-    lines.forEach((line, lineIndex) => {
-      if (lineIndex > 0) {
-        // Add a line break after each line, except for the first one
-        textElement.appendChild(document.createElement('br'));
-      }
-
-      const words = line.split(/\s+/); // Split by spaces within each line
-      words.forEach(word => {
-        const span = document.createElement('span');
-        span.textContent = word;
-        textElement.appendChild(span);
-
-        // Append a whitespace text node after each span
-        const space = document.createTextNode(' ');
-        textElement.appendChild(space);
+    connectedCallback() {
+      // Set up the ResizeObserver to observe the component itself
+      this.resizeObserver = new ResizeObserver(() => {
+        console.log('Resize observed');
+        this.adjustFontSizeOnResize();
       });
-    });
+      this.resizeObserver.observe(this);
 
-    restoreCursorPosition(cursorRange);
-  }
+      console.log("Connected");
 
-  // Function to merge words back into a single text node
-  function mergeTextFromSpans() {
-    const cursorRange = saveCursorPosition();
+      // Initial tokenization inside shadow DOM
+      this.wrapTextInSpans();
+    }
 
-    const lines = [];
-    let currentLine = [];
-    textElement.childNodes.forEach(node => {
-      if (node.nodeName === 'SPAN') {
-        currentLine.push(node.textContent);
-      } else if (node.nodeName === 'BR') {
-        lines.push(currentLine.join(' '));
-        currentLine = [];
+    disconnectedCallback() {
+      if (this.resizeObserver) {
+        this.resizeObserver.unobserve(this);
       }
-    });
-    // Push the last line if there is any content left
-    if (currentLine.length > 0) {
-      lines.push(currentLine.join(' '));
     }
 
-    textElement.innerHTML = lines.join('<br>'); // Recreate the original content with line breaks
-
-    restoreCursorPosition(cursorRange);
-  }
-
-  // Listen for keyboard shortcuts Ctrl+ and Ctrl-
-  document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey && (event.key === '+' || event.key === '=')) {
-      event.preventDefault();
-      adjustFontSize(5); // Increase size in steps of 5px
-    } else if (event.ctrlKey && event.key === '-') {
-      event.preventDefault();
-      adjustFontSize(-5); // Decrease size in steps of 5px
-    }
-  });
-
-  // Function to adjust font size
-  function adjustFontSize(change) {
-    targetFontSize += change;
-    if (targetFontSize < 10) targetFontSize = 10; // Minimum font size
-
-    // If an animation is in progress, just set the new target and return
-    if (isAnimating) {
-      return;
+    get wrapper() {
+      return this.shadowRoot.querySelector('.wrapper'); // Access the wrapper in shadow DOM
     }
 
-    // Tokenize before resizing
-    wrapTextInSpans();
+    // Function to wrap words in spans (tokenize)
+    wrapTextInSpans() {
+      const text = this.wrapper.textContent.trim(); // Use textContent for raw text
+      const lines = text.split(/\n/); // Split by line breaks
+      this.wrapper.innerHTML = ''; // Clear current content of wrapper
 
-    // Trigger the animation to the target size
-    performSmoothResize(targetFontSize);
-  }
+      lines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) {
+          this.wrapper.appendChild(document.createElement('br'));
+        }
 
-  function performSmoothResize(newFontSize) {
-    isAnimating = true;
+        const words = line.split(/\s+/); // Split by spaces within each line
+        words.forEach(word => {
+          const span = document.createElement('span');
+          span.textContent = word;
+          this.wrapper.appendChild(span);
 
-    const words = textElement.querySelectorAll('span');
+          // Append a whitespace text node after each span
+          const space = document.createTextNode(' ');
+          this.wrapper.appendChild(space);
+        });
+      });
+    }
 
-    // Step 1: Capture Initial Positions
-    const firstPositions = [];
-    words.forEach(word => {
-      const rect = word.getBoundingClientRect();
-      firstPositions.push(rect);
-    });
+    // Function to merge words back into a single text node
+    mergeTextFromSpans() {
+      const lines = [];
+      let currentLine = [];
+      this.wrapper.childNodes.forEach(node => {
+        if (node.nodeName === 'SPAN') {
+          currentLine.push(node.textContent);
+        } else if (node.nodeName === 'BR') {
+          lines.push(currentLine.join(' '));
+          currentLine = [];
+        }
+      });
+      if (currentLine.length > 0) {
+        lines.push(currentLine.join(' '));
+      }
+      this.wrapper.innerHTML = lines.join('<br>'); // Recreate the original content with line breaks
+    }
 
-    // Step 2: Apply new font size
-    textElement.style.fontSize = newFontSize + 'px';
+    // Function to trigger font size adjustment on resize
+    adjustFontSizeOnResize() {
+      const newFontSize = this.calculateNewFontSize();
+      if (newFontSize !== this.targetFontSize) {
+        this.targetFontSize = newFontSize;
+        this.performSmoothResize(newFontSize);
+      }
+    }
 
-    // Step 3: Capture Final Positions after font size change
-    requestAnimationFrame(() => {
-      const lastPositions = [];
+    // Example calculation for new font size (adjust as needed)
+    calculateNewFontSize() {
+      const containerWidth = this.offsetWidth;
+      return 10 //Math.max(10, containerWidth / 50); // Example logic: font size based on width
+    }
+
+    // Function to perform smooth resizing
+    performSmoothResize(newFontSize) {
+      if (this.isAnimating) {
+        return; // Don't trigger a new animation if one is already running
+      }
+      this.isAnimating = true;
+
+      const words = this.wrapper.querySelectorAll('span');
+
+      // Step 1: Capture Initial Positions
+      const firstPositions = [];
       words.forEach(word => {
         const rect = word.getBoundingClientRect();
-        lastPositions.push(rect);
+        firstPositions.push(rect);
       });
 
-      // Step 4: Calculate Deltas and Apply Inverse Transforms
-      words.forEach((word, index) => {
-        const deltaX = firstPositions[index].left - lastPositions[index].left;
-        const deltaY = firstPositions[index].top - lastPositions[index].top;
-        word.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-        
-      });
+      // Step 2: Apply new font size
+      this.wrapper.style.fontSize = newFontSize + 'px';
 
-      // Step 5: Animate Words to New Positions
+      // Step 3: Capture Final Positions after font size change
       requestAnimationFrame(() => {
+        const lastPositions = [];
         words.forEach(word => {
+          const rect = word.getBoundingClientRect();
+          lastPositions.push(rect);
+        });
+
+        // Step 4: Calculate Deltas and Apply Inverse Transforms
+        words.forEach((word, index) => {
+          const deltaX = firstPositions[index].left - lastPositions[index].left;
+          const deltaY = firstPositions[index].top - lastPositions[index].top;
+          word.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        });
+
+        // Step 5: Animate Words to New Positions
+        requestAnimationFrame(() => {
+          words.forEach(word => {
             const randomDuration = (Math.random() * 0.3 + 0.5).toFixed(2) + 's';
             word.style.transition = `transform ${randomDuration} ease-in-out`;
             word.style.animation = `variation1 ${randomDuration}`;
-          word.style.transform = 'translate(0, 0)';
+            word.style.transform = 'translate(0, 0)';
+          });
         });
+
+        // Step 6: Clean Up Inline Styles After Animation
+        setTimeout(() => {
+          words.forEach(word => {
+            word.style.transition = '';
+            word.style.transform = '';
+          });
+          this.isAnimating = false; // Animation is complete
+
+          this.mergeTextFromSpans(); // Merge spans back into plain text for easier editing
+        }, 800);
       });
-
-      // Step 6: Clean Up Inline Styles After Animation
-      setTimeout(() => {
-        words.forEach(word => {
-          word.style.transition = '';
-          word.style.transform = '';
-        });
-        isAnimating = false; // Animation is complete
-
-        // If the target font size has changed during the animation, start a new animation
-        if (fontSize !== targetFontSize) {
-          performSmoothResize(targetFontSize);
-        } else {
-          // Merge spans back into plain text for easier editing
-          mergeTextFromSpans();
-        }
-
-        fontSize = targetFontSize; // Sync the fontSize with the latest target
-      }, 800); // Match this duration with your transition duration
-    });
+    }
   }
+
+  customElements.define('my-paragraph', MyParagraph);
 </script>
+</head>
+<body>
+
+<my-paragraph>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean auctor accumsan pretium. Nullam dapibus magna congue auctor luctus. Nulla ac ullamcorper ex. Phasellus euismod, mi sed aliquet suscipit, nunc eros rutrum odio, quis pellentesque augue nisl vitae mauris. Nunc rhoncus lectus vitae diam blandit vehicula. Vivamus tempus finibus ipsum, nec ullamcorper neque scelerisque vitae. Nam mollis tempor justo, eget lobortis tellus commodo maximus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.</my-paragraph>
 
 </body>
 </html>
