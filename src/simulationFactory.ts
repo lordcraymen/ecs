@@ -67,18 +67,29 @@ import d3, {
       }
 */
 
-class Simulation {
-  private simulationInstance: any;
+class D3Simulation {
   private radialForce: any;
-  private lastPositions: { [key: string]: { x: number; y: number } } = {};
-  private subscribers: Set<HTMLElement> = new Set();
+  private simulationInstance: d3.Simulation<any, any>;
 
-  constructor(private parentNode: any) {
+  constructor() {
     this.radialForce = forceRadial(0, () => parentNode.x, () => parentNode.y).strength(0.5);
     this.simulationInstance = forceSimulation()
       .force("collision", forceCollide().radius((d: any) => d.r + padding))
       .force("attraction", this.radialForce)
-      .on("tick", this.ticked.bind(this));
+  }
+
+  public on = (type: string, callback: any) => {};
+}
+
+class LocalSimulation {
+  private simulationInstance: any;
+  
+  private lastPositions: { [key: string]: { x: number; y: number } } = {};
+  private subscribers: Set<HTMLElement> = new Set();
+
+  constructor(private parentNode: HTMLElement, simulation: D3Simulation = new D3Simulation()) {
+    this.simulationInstance = simulation;
+    this.simulationInstance.on("tick", () => this.ticked());
   }
 
   private ticked() {
@@ -129,4 +140,4 @@ class Simulation {
   }
 }
 
-export { Simulation };
+export { LocalSimulation };
